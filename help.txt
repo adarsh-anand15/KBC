@@ -1,0 +1,6 @@
+		       .....KAUN BANEGA CROREPATI.....
+
+This game cosists of ten levels.
+Each level carries one question with four options of which only one is correct.
+If you choose correct option you will proceed to next level otherwise the game gets over.
+The person who clears all the ten levels becomes a "CROREPATI".

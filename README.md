@@ -1,4 +1,4 @@
-#KBC  
+#Quiz Game
 
 It's a simple console application implementing a Quiz game.  
 The game consists of 10 levels, answering all questions wins you the game.  

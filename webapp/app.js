@@ -425,12 +425,12 @@ const SCREENS = {
   topScore: () => {
     const list = getTopScores();
     const rows = list.length
-      ? list.map(e => `<tr><td>${escapeHtml(e.name)}</td><td>${formatINR(e.score)}</td><td>${escapeHtml(e.date)}</td><td>${escapeHtml(e.time)}</td></tr>`).join('')
-      : `<tr><td colspan="4">No top score yet &mdash; be the first Crorepati!</td></tr>`;
+      ? list.map((e, i) => `<tr><td>${i + 1}</td><td>${escapeHtml(e.name)}</td><td>${formatINR(e.score)}</td><td>${escapeHtml(e.date)}</td><td>${escapeHtml(e.time)}</td></tr>`).join('')
+      : `<tr><td colspan="5">No top scores yet &mdash; be the first Crorepati!</td></tr>`;
     return `
-      <h1 class="title">TOP SCORE</h1>
+      <h1 class="title">TOP ${TOP_SCORE_LIMIT} SCORES</h1>
       <table class="score-table">
-        <thead><tr><th>Name</th><th>Score</th><th>Date</th><th>Time</th></tr></thead>
+        <thead><tr><th>#</th><th>Name</th><th>Score</th><th>Date</th><th>Time</th></tr></thead>
         <tbody>${rows}</tbody>
       </table>
       <div class="row"><button class="primary" id="go-mainmenu">Return to Main Menu</button></div>

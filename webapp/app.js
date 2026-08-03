@@ -102,6 +102,14 @@ const STORAGE_KEYS = {
 
 const MAX_ADMIN_TRIALS = 5;
 
+// GitHub Pages only serves static files, so persistence there goes through
+// a separate Cloudflare Worker (see cloudflare-worker/README.md) instead of
+// the same-origin /api/data that server.py provides for local/self-hosted
+// runs. Update this URL after deploying the worker.
+const API_BASE = location.hostname.endsWith('github.io')
+  ? 'https://kbc-api.YOUR_SUBDOMAIN.workers.dev'
+  : '';
+
 /* ---------- Storage helpers ---------- */
 
 function loadJSON(key, fallback) {
@@ -123,7 +131,7 @@ function saveJSON(key, value) {
 // browser's localStorage. Falls back silently if no server is present
 // (e.g. index.html opened directly via file://).
 function pushServerState(partial) {
-  fetch('/api/data', {
+  fetch(`${API_BASE}/api/data`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(partial)
@@ -132,7 +140,7 @@ function pushServerState(partial) {
 
 async function fetchServerState() {
   try {
-    const res = await fetch('/api/data', { cache: 'no-store' });
+    const res = await fetch(`${API_BASE}/api/data`, { cache: 'no-store' });
     if (!res.ok) return null;
     return await res.json();
   } catch (e) {

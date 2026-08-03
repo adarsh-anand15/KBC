@@ -102,6 +102,12 @@ const STORAGE_KEYS = {
 
 const MAX_ADMIN_TRIALS = 5;
 
+// Defaults to the relative path server.py serves during local dev.
+// On a static host (e.g. GitHub Pages), set window.KBC_API_BASE to a
+// deployed persistence backend's endpoint before this script loads
+// (see webapp/index.html and cloudflare/README.md).
+const API_BASE = (typeof window !== 'undefined' && window.KBC_API_BASE) || '/api/data';
+
 /* ---------- Storage helpers ---------- */
 
 function loadJSON(key, fallback) {
@@ -123,7 +129,7 @@ function saveJSON(key, value) {
 // browser's localStorage. Falls back silently if no server is present
 // (e.g. index.html opened directly via file://).
 function pushServerState(partial) {
-  fetch('/api/data', {
+  fetch(API_BASE, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(partial)
@@ -132,7 +138,7 @@ function pushServerState(partial) {
 
 async function fetchServerState() {
   try {
-    const res = await fetch('/api/data', { cache: 'no-store' });
+    const res = await fetch(API_BASE, { cache: 'no-store' });
     if (!res.ok) return null;
     return await res.json();
   } catch (e) {

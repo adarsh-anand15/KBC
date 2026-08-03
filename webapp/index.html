@@ -8,6 +8,12 @@
 </head>
 <body>
   <div id="app" class="app"></div>
+  <script>
+    // Point at a deployed Cloudflare Worker so scores/saved games persist
+    // even when this page is served statically (e.g. via GitHub Pages).
+    // Leave unset for local dev against webapp/server.py's relative /api/data.
+    // window.KBC_API_BASE = 'https://kbc-api.<your-subdomain>.workers.dev/api/data';
+  </script>
   <script src="app.js"></script>
 </body>
 </html>

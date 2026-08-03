@@ -526,7 +526,7 @@ const SCREENS = {
       ${S.formError ? `<div class="msg-banner error">${escapeHtml(S.formError)}</div>` : ''}
       ${draft.map((rec, i) => `
         <div class="qa-editor">
-          <h4>Question ${i + 1}</h4>
+          <h4>Question ${i + 1} ${draft.length > 1 ? `<button class="link" data-idx="${i}" id="qa-remove-${i}">Remove</button>` : ''}</h4>
           <div class="field">
             <label>Question text</label>
             <input class="qa-q" data-idx="${i}" type="text" value="${escapeHtml(rec.q)}" />
@@ -554,6 +554,9 @@ const SCREENS = {
           </div>
         </div>
       `).join('')}
+      <div class="row">
+        <button id="ae-add">+ Add Question</button>
+      </div>
       <div class="row">
         <button class="primary" id="ae-save">Save Level</button>
         <button id="ae-cancel">Cancel</button>
@@ -777,6 +780,16 @@ function bindEvents() {
 
     case 'adminEditLevel': {
       byId('ae-cancel').onclick = () => goto('adminSelectLevel');
+      byId('ae-add').onclick = () => {
+        S.editDraft.push({ q: '', options: ['', '', '', ''], answer: 'A' });
+        render();
+      };
+      document.querySelectorAll('[id^="qa-remove-"]').forEach(btn => {
+        btn.onclick = () => {
+          S.editDraft.splice(+btn.dataset.idx, 1);
+          render();
+        };
+      });
       document.querySelectorAll('.qa-q').forEach(inp => {
         inp.oninput = () => { S.editDraft[+inp.dataset.idx].q = inp.value; };
       });

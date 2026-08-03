@@ -355,6 +355,10 @@ table.score-table th {
 .qa-editor h4 {
   margin: 0 0 10px;
   color: var(--gold);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
 }
 
 .answer-picker {

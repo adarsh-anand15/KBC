@@ -101,6 +101,8 @@ const STORAGE_KEYS = {
 };
 
 const MAX_ADMIN_TRIALS = 5;
+const TIMER_SECONDS = 30;
+const TIMER_LEVELS = 5;
 
 // GitHub Pages only serves static files, so persistence there goes through
 // a separate Cloudflare Worker (see cloudflare-worker/README.md) instead of
@@ -265,10 +267,38 @@ const S = {
   adminUnlocked: false,
   editLevel: 1,
   editDraft: null,
-  formError: ''
+  formError: '',
+  lifelineUsed: false,
+  hiddenOptions: [],
+  timeLeft: TIMER_SECONDS
 };
 
 const app = document.getElementById('app');
+let timerHandle = null;
+
+function clearTimer() {
+  if (timerHandle) {
+    clearInterval(timerHandle);
+    timerHandle = null;
+  }
+}
+
+function startTimer() {
+  timerHandle = setInterval(() => {
+    S.timeLeft -= 1;
+    const el = document.getElementById('play-timer');
+    if (el) {
+      el.textContent = `⏱ ${S.timeLeft}s`;
+      el.classList.toggle('warning', S.timeLeft <= 10);
+    }
+    if (S.timeLeft <= 0) {
+      clearTimer();
+      S.selected = null;
+      S.screen = 'answered';
+      render();
+    }
+  }, 1000);
+}
 
 function render() {
   app.innerHTML = `<div class="screen">${SCREENS[S.screen]()}</div>`;
@@ -334,15 +364,23 @@ const SCREENS = {
   play: () => {
     const q = S.currentQuestion;
     const letters = ['A', 'B', 'C', 'D'];
+    const showTimer = S.level <= TIMER_LEVELS;
     return `
       <div class="hud"><span>${escapeHtml(S.player.name)}</span><span>Score secured: ${formatINR(S.score)}</span></div>
       <div class="level-badge">LEVEL ${S.level} &middot; ${formatINR(PRIZES[S.level])}</div>
+      ${showTimer ? `<div class="timer${S.timeLeft <= 10 ? ' warning' : ''}" id="play-timer">⏱ ${S.timeLeft}s</div>` : ''}
       <div class="question">${escapeHtml(q.q)}</div>
       <div class="options">
-        ${letters.map((L, i) => `
-          <button class="option-btn" data-letter="${L}">
-            <span class="opt-letter">${L})</span> ${escapeHtml(q.options[i])}
-          </button>`).join('')}
+        ${letters.map((L, i) => {
+          const removed = S.hiddenOptions.includes(L);
+          return `
+          <button class="option-btn${removed ? ' removed' : ''}" data-letter="${L}" ${removed ? 'disabled' : ''}>
+            <span class="opt-letter">${L})</span> ${removed ? '&mdash;' : escapeHtml(q.options[i])}
+          </button>`;
+        }).join('')}
+      </div>
+      <div class="row">
+        <button id="lifeline-5050" ${S.lifelineUsed ? 'disabled' : ''}>${S.lifelineUsed ? '50-50 Used' : '50-50 Lifeline'}</button>
       </div>
       <button class="link" id="play-quit">Quit to Main Menu (progress not saved)</button>
     `;
@@ -366,7 +404,7 @@ const SCREENS = {
         }).join('')}
       </div>
       <div class="feedback ${isCorrect ? 'correct-text' : 'wrong-text'}">
-        ${isCorrect ? '"Correct Answer"' : '"Incorrect Answer"'}
+        ${isCorrect ? '"Correct Answer"' : (S.selected === null ? '"Time\'s Up!"' : '"Incorrect Answer"')}
       </div>
       <div class="score-display">Your Score: ${formatINR(isCorrect ? PRIZES[S.level] : S.score)}</div>
       ${isCorrect ? `
@@ -654,20 +692,33 @@ function bindEvents() {
         S.player = { name, password };
         S.level = 1;
         S.score = 0;
+        S.lifelineUsed = false;
         startLevel();
       };
       break;
     }
 
     case 'play': {
-      document.querySelectorAll('.option-btn').forEach(btn => {
+      document.querySelectorAll('.option-btn:not(.removed)').forEach(btn => {
         btn.onclick = () => {
+          clearTimer();
           S.selected = btn.getAttribute('data-letter');
           S.screen = 'answered';
           render();
         };
       });
-      byId('play-quit').onclick = () => goto('mainMenu');
+      const lifelineBtn = byId('lifeline-5050');
+      if (lifelineBtn && !S.lifelineUsed) {
+        lifelineBtn.onclick = () => {
+          S.lifelineUsed = true;
+          const q = S.currentQuestion;
+          const wrongLetters = ['A', 'B', 'C', 'D'].filter(L => L !== q.answer);
+          const keepIdx = Math.floor(Math.random() * wrongLetters.length);
+          S.hiddenOptions = wrongLetters.filter((_, i) => i !== keepIdx);
+          render();
+        };
+      }
+      byId('play-quit').onclick = () => { clearTimer(); goto('mainMenu'); };
       break;
     }
 
@@ -721,6 +772,7 @@ function bindEvents() {
         S.player = { name, password };
         S.level = saved.level;
         S.score = saved.score;
+        S.lifelineUsed = false;
         startLevel();
       };
       break;
@@ -865,9 +917,13 @@ function openAdmin() {
 }
 
 function startLevel() {
+  clearTimer();
   S.currentQuestion = pickRandomQuestion(S.level);
   S.selected = null;
+  S.hiddenOptions = [];
+  S.timeLeft = TIMER_SECONDS;
   goto('play');
+  if (S.level <= TIMER_LEVELS) startTimer();
 }
 
 function pauseAndSave() {

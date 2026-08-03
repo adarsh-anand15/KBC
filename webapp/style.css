@@ -221,6 +221,23 @@ button.link {
   border-color: #b93326;
 }
 
+.option-btn.removed {
+  opacity: 0.35;
+  cursor: not-allowed;
+  border-style: dashed;
+}
+
+.timer {
+  font-size: 1.1rem;
+  font-weight: bold;
+  color: var(--gold-soft);
+  margin-bottom: 10px;
+}
+
+.timer.warning {
+  color: var(--wrong);
+}
+
 .feedback {
   font-size: 1.15rem;
   font-weight: bold;

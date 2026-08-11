@@ -2,11 +2,6 @@ name: Cloudflare KV one-time setup
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - claude/cloudflare-integration-had3bh
-    paths:
-      - ".github/workflows/cloudflare-kv-setup.yml"
 
 jobs:
   create-namespace:

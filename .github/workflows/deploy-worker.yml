@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - master
+      - claude/cloudflare-integration-had3bh
     paths:
       - "cloudflare-worker/**"
       - ".github/workflows/deploy-worker.yml"

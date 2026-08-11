@@ -1,9 +1,12 @@
 # KBC — Android app
 
 Wraps the `webapp/` folder in a Capacitor-based native Android shell, so it
-installs as a real app icon and runs fully offline — same as opening
-`index.html` directly, data is stored in the device's local storage, no
-network or server required.
+installs as a real app icon. Like the GitHub Pages deployment, it syncs
+scores/saved games to the same Cloudflare Worker (see
+`../cloudflare-worker/README.md`) when online, so progress is shared with
+the web version instead of being stuck on one device. Data still falls back
+to the device's local storage when offline, and the game is fully playable
+without a network connection either way.
 
 ## Getting the APK (no Android Studio needed)
 

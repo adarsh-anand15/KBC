@@ -104,11 +104,18 @@ const MAX_ADMIN_TRIALS = 5;
 const TIMER_SECONDS = 30;
 const TIMER_LEVELS = 5;
 
-// GitHub Pages only serves static files, so persistence there goes through
-// a separate Cloudflare Worker (see cloudflare-worker/README.md) instead of
-// the same-origin /api/data that server.py provides for local/self-hosted
-// runs.
-const API_BASE = location.hostname.endsWith('github.io')
+// GitHub Pages and the packaged Android app (Capacitor, no server of its
+// own) both need persistence to go through the same Cloudflare Worker (see
+// cloudflare-worker/README.md) instead of the same-origin /api/data that
+// server.py provides for local/self-hosted runs. Capacitor injects
+// window.Capacitor into the WebView at runtime regardless of hostname, so
+// that's the reliable way to detect "running as the native app".
+const isNativeApp = typeof window !== 'undefined'
+  && window.Capacitor
+  && typeof window.Capacitor.isNativePlatform === 'function'
+  && window.Capacitor.isNativePlatform();
+
+const API_BASE = (location.hostname.endsWith('github.io') || isNativeApp)
   ? 'https://kbc-api.adarsh-anand15.workers.dev'
   : '';
 

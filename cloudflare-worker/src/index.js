@@ -10,6 +10,9 @@ const DEFAULT_STATE = {
 const ALLOWED_ORIGINS = new Set([
   'https://adarsh-anand15.github.io',
   'http://localhost:8000',
+  // Capacitor's default Android WebView origin (androidScheme: 'https',
+  // host: 'localhost') — the packaged Android app.
+  'https://localhost',
 ]);
 
 function corsHeaders(origin) {

@@ -101,12 +101,16 @@ const STORAGE_KEYS = {
 };
 
 const MAX_ADMIN_TRIALS = 5;
+const TIMER_SECONDS = 30;
+const TIMER_LEVELS = 5;
 
-// Defaults to the relative path server.py serves during local dev.
-// On a static host (e.g. GitHub Pages), set window.KBC_API_BASE to a
-// deployed persistence backend's endpoint before this script loads
-// (see webapp/index.html and cloudflare/README.md).
-const API_BASE = (typeof window !== 'undefined' && window.KBC_API_BASE) || '/api/data';
+// GitHub Pages only serves static files, so persistence there goes through
+// a separate Cloudflare Worker (see cloudflare-worker/README.md) instead of
+// the same-origin /api/data that server.py provides for local/self-hosted
+// runs.
+const API_BASE = location.hostname.endsWith('github.io')
+  ? 'https://kbc-api.adarsh-anand15.workers.dev'
+  : '';
 
 /* ---------- Storage helpers ---------- */
 
@@ -129,7 +133,7 @@ function saveJSON(key, value) {
 // browser's localStorage. Falls back silently if no server is present
 // (e.g. index.html opened directly via file://).
 function pushServerState(partial) {
-  fetch(API_BASE, {
+  fetch(`${API_BASE}/api/data`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(partial)
@@ -138,7 +142,7 @@ function pushServerState(partial) {
 
 async function fetchServerState() {
   try {
-    const res = await fetch(API_BASE, { cache: 'no-store' });
+    const res = await fetch(`${API_BASE}/api/data`, { cache: 'no-store' });
     if (!res.ok) return null;
     return await res.json();
   } catch (e) {
@@ -263,10 +267,38 @@ const S = {
   adminUnlocked: false,
   editLevel: 1,
   editDraft: null,
-  formError: ''
+  formError: '',
+  lifelineUsed: false,
+  hiddenOptions: [],
+  timeLeft: TIMER_SECONDS
 };
 
 const app = document.getElementById('app');
+let timerHandle = null;
+
+function clearTimer() {
+  if (timerHandle) {
+    clearInterval(timerHandle);
+    timerHandle = null;
+  }
+}
+
+function startTimer() {
+  timerHandle = setInterval(() => {
+    S.timeLeft -= 1;
+    const el = document.getElementById('play-timer');
+    if (el) {
+      el.textContent = `⏱ ${S.timeLeft}s`;
+      el.classList.toggle('warning', S.timeLeft <= 10);
+    }
+    if (S.timeLeft <= 0) {
+      clearTimer();
+      S.selected = null;
+      S.screen = 'answered';
+      render();
+    }
+  }, 1000);
+}
 
 function render() {
   app.innerHTML = `<div class="screen">${SCREENS[S.screen]()}</div>`;
@@ -332,15 +364,23 @@ const SCREENS = {
   play: () => {
     const q = S.currentQuestion;
     const letters = ['A', 'B', 'C', 'D'];
+    const showTimer = S.level <= TIMER_LEVELS;
     return `
       <div class="hud"><span>${escapeHtml(S.player.name)}</span><span>Score secured: ${formatINR(S.score)}</span></div>
       <div class="level-badge">LEVEL ${S.level} &middot; ${formatINR(PRIZES[S.level])}</div>
+      ${showTimer ? `<div class="timer${S.timeLeft <= 10 ? ' warning' : ''}" id="play-timer">⏱ ${S.timeLeft}s</div>` : ''}
       <div class="question">${escapeHtml(q.q)}</div>
       <div class="options">
-        ${letters.map((L, i) => `
-          <button class="option-btn" data-letter="${L}">
-            <span class="opt-letter">${L})</span> ${escapeHtml(q.options[i])}
-          </button>`).join('')}
+        ${letters.map((L, i) => {
+          const removed = S.hiddenOptions.includes(L);
+          return `
+          <button class="option-btn${removed ? ' removed' : ''}" data-letter="${L}" ${removed ? 'disabled' : ''}>
+            <span class="opt-letter">${L})</span> ${removed ? '&mdash;' : escapeHtml(q.options[i])}
+          </button>`;
+        }).join('')}
+      </div>
+      <div class="row">
+        <button id="lifeline-5050" ${S.lifelineUsed ? 'disabled' : ''}>${S.lifelineUsed ? '50-50 Used' : '50-50 Lifeline'}</button>
       </div>
       <button class="link" id="play-quit">Quit to Main Menu (progress not saved)</button>
     `;
@@ -364,7 +404,7 @@ const SCREENS = {
         }).join('')}
       </div>
       <div class="feedback ${isCorrect ? 'correct-text' : 'wrong-text'}">
-        ${isCorrect ? '"Correct Answer"' : '"Incorrect Answer"'}
+        ${isCorrect ? '"Correct Answer"' : (S.selected === null ? '"Time\'s Up!"' : '"Incorrect Answer"')}
       </div>
       <div class="score-display">Your Score: ${formatINR(isCorrect ? PRIZES[S.level] : S.score)}</div>
       ${isCorrect ? `
@@ -532,7 +572,7 @@ const SCREENS = {
       ${S.formError ? `<div class="msg-banner error">${escapeHtml(S.formError)}</div>` : ''}
       ${draft.map((rec, i) => `
         <div class="qa-editor">
-          <h4>Question ${i + 1}</h4>
+          <h4>Question ${i + 1} ${draft.length > 1 ? `<button class="link" data-idx="${i}" id="qa-remove-${i}">Remove</button>` : ''}</h4>
           <div class="field">
             <label>Question text</label>
             <input class="qa-q" data-idx="${i}" type="text" value="${escapeHtml(rec.q)}" />
@@ -560,6 +600,9 @@ const SCREENS = {
           </div>
         </div>
       `).join('')}
+      <div class="row">
+        <button id="ae-add">+ Add Question</button>
+      </div>
       <div class="row">
         <button class="primary" id="ae-save">Save Level</button>
         <button id="ae-cancel">Cancel</button>
@@ -649,20 +692,33 @@ function bindEvents() {
         S.player = { name, password };
         S.level = 1;
         S.score = 0;
+        S.lifelineUsed = false;
         startLevel();
       };
       break;
     }
 
     case 'play': {
-      document.querySelectorAll('.option-btn').forEach(btn => {
+      document.querySelectorAll('.option-btn:not(.removed)').forEach(btn => {
         btn.onclick = () => {
+          clearTimer();
           S.selected = btn.getAttribute('data-letter');
           S.screen = 'answered';
           render();
         };
       });
-      byId('play-quit').onclick = () => goto('mainMenu');
+      const lifelineBtn = byId('lifeline-5050');
+      if (lifelineBtn && !S.lifelineUsed) {
+        lifelineBtn.onclick = () => {
+          S.lifelineUsed = true;
+          const q = S.currentQuestion;
+          const wrongLetters = ['A', 'B', 'C', 'D'].filter(L => L !== q.answer);
+          const keepIdx = Math.floor(Math.random() * wrongLetters.length);
+          S.hiddenOptions = wrongLetters.filter((_, i) => i !== keepIdx);
+          render();
+        };
+      }
+      byId('play-quit').onclick = () => { clearTimer(); goto('mainMenu'); };
       break;
     }
 
@@ -716,6 +772,7 @@ function bindEvents() {
         S.player = { name, password };
         S.level = saved.level;
         S.score = saved.score;
+        S.lifelineUsed = false;
         startLevel();
       };
       break;
@@ -783,6 +840,16 @@ function bindEvents() {
 
     case 'adminEditLevel': {
       byId('ae-cancel').onclick = () => goto('adminSelectLevel');
+      byId('ae-add').onclick = () => {
+        S.editDraft.push({ q: '', options: ['', '', '', ''], answer: 'A' });
+        render();
+      };
+      document.querySelectorAll('[id^="qa-remove-"]').forEach(btn => {
+        btn.onclick = () => {
+          S.editDraft.splice(+btn.dataset.idx, 1);
+          render();
+        };
+      });
       document.querySelectorAll('.qa-q').forEach(inp => {
         inp.oninput = () => { S.editDraft[+inp.dataset.idx].q = inp.value; };
       });
@@ -850,9 +917,13 @@ function openAdmin() {
 }
 
 function startLevel() {
+  clearTimer();
   S.currentQuestion = pickRandomQuestion(S.level);
   S.selected = null;
+  S.hiddenOptions = [];
+  S.timeLeft = TIMER_SECONDS;
   goto('play');
+  if (S.level <= TIMER_LEVELS) startTimer();
 }
 
 function pauseAndSave() {

@@ -5,7 +5,7 @@ on:
     branches:
       - master
     paths:
-      - "cloudflare/**"
+      - "cloudflare-worker/**"
       - ".github/workflows/deploy-worker.yml"
   workflow_dispatch:
 
@@ -21,4 +21,4 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          workingDirectory: cloudflare
+          workingDirectory: cloudflare-worker

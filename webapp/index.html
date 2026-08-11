@@ -8,12 +8,6 @@
 </head>
 <body>
   <div id="app" class="app"></div>
-  <script>
-    // Cloudflare Worker backing persistence (scores/saved games/etc.) so
-    // it survives across visits even though this page is served
-    // statically via GitHub Pages. See ../cloudflare/README.md.
-    window.KBC_API_BASE = 'https://kbc-api.adarsh-anand15.workers.dev/api/data';
-  </script>
   <script src="app.js"></script>
 </body>
 </html>

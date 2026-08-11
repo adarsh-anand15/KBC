@@ -221,6 +221,23 @@ button.link {
   border-color: #b93326;
 }
 
+.option-btn.removed {
+  opacity: 0.35;
+  cursor: not-allowed;
+  border-style: dashed;
+}
+
+.timer {
+  font-size: 1.1rem;
+  font-weight: bold;
+  color: var(--gold-soft);
+  margin-bottom: 10px;
+}
+
+.timer.warning {
+  color: var(--wrong);
+}
+
 .feedback {
   font-size: 1.15rem;
   font-weight: bold;
@@ -355,6 +372,10 @@ table.score-table th {
 .qa-editor h4 {
   margin: 0 0 10px;
   color: var(--gold);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
 }
 
 .answer-picker {

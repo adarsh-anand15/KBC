@@ -33,8 +33,8 @@ No build step, no dependencies. Either:
 
 - Data is stored in the browser's `localStorage` instead of `.DAT` files
   next to the executable. When hosted statically (e.g. GitHub Pages),
-  it can optionally also sync to a Cloudflare Worker for real
-  persistence across visits/devices — see `../cloudflare/README.md`.
+  it also syncs to a Cloudflare Worker for real persistence across
+  visits/devices — see `../cloudflare-worker/README.md`.
 - The admin "Saved Games" view no longer displays player passwords in
   plain text (the original console tool printed them directly).
 - A couple of obvious typos in the original question bank were fixed

@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">KBC</string>
+    <string name="title_activity_main">KBC</string>
+    <string name="package_name">io.github.adarshanand15.kbc</string>
+    <string name="custom_url_scheme">io.github.adarshanand15.kbc</string>
+</resources>

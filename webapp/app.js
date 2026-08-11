@@ -107,9 +107,9 @@ const TIMER_LEVELS = 5;
 // GitHub Pages only serves static files, so persistence there goes through
 // a separate Cloudflare Worker (see cloudflare-worker/README.md) instead of
 // the same-origin /api/data that server.py provides for local/self-hosted
-// runs. Update this URL after deploying the worker.
+// runs.
 const API_BASE = location.hostname.endsWith('github.io')
-  ? 'https://kbc-api.YOUR_SUBDOMAIN.workers.dev'
+  ? 'https://kbc-api.adarsh-anand15.workers.dev'
   : '';
 
 /* ---------- Storage helpers ---------- */
